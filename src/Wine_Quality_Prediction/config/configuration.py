@@ -1,6 +1,8 @@
 from src.Wine_Quality_Prediction.constants import * #import constant file paths
 from src.Wine_Quality_Prediction.utils.common import read_yaml, create_directories #import helper functions
-from src.Wine_Quality_Prediction.entity.config_entity import (DataIngestionconfig, DataValidationConfig, DataTransformationConfig, ModelTrainerConfig)
+from src.Wine_Quality_Prediction.entity.config_entity import (DataIngestionconfig, DataValidationConfig, DataTransformationConfig, ModelTrainerConfig, ModelEvaluationConfig) #import config entity classes
+import os
+from dotenv import load_dotenv
 
 class ConfigurationManager:
     def __init__(self,
@@ -80,3 +82,32 @@ class ConfigurationManager:
         )
 
         return model_trainer_config
+
+    #Model Evaluation Configuration
+    def get_model_evaluation_config(self) -> ModelEvaluationConfig:
+        """
+        Retrieves the configuration required for model evaluation.
+
+        Returns:
+        - ModelEvaluationConfig object containing paths and evaluation parameters.
+        """
+        # Extract evaluation-related configurations
+        config = self.config.model_evaluation  # Get model evaluation settings
+        params = self.params.ElasticNet  # Get ElasticNet hyperparameters
+        schema = self.schema.TARGET_COLUMN  # Get target column name
+
+        # Ensure the evaluation directory exists
+        create_directories([config.root_dir])
+
+        # Create a structured ModelEvaluationConfig object
+        model_evaluation_config = ModelEvaluationConfig(
+            root_dir=config.root_dir,  # Directory for evaluation artifacts
+            test_data_path=config.test_data_path,  # Path to test dataset
+            model_path=config.model_path,  # Path to the trained model
+            all_params=params,  # ML model parameters from params.yaml
+            metric_file_name=config.metric_file_name,  # Name of the metric file
+            target_column=schema.name,  # Target column for evaluation
+            mlflow_uri=os.environ.get("MLFLOW_TRACKING_URI")  # MLflow tracking URI
+        )
+
+        return model_evaluation_config  # Return the structured config object
